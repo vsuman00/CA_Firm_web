@@ -2,8 +2,10 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/services/tax-filing": "pages/services/tax-filing.js",
-  "/": "pages/index.js",
+  "/login": "pages/login.js",
   "/services": "pages/services.js",
-  "/login": "pages/login.js"
+  "/": "pages/index.js",
+  "/services/tax-filing": "pages/services/tax-filing.js",
+  "/user/dashboard": "pages/user/dashboard.js",
+  "/contact": "pages/contact.js"
 }

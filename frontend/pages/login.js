@@ -30,6 +30,7 @@ const OtpLoginSchema = Yup.object().shape({
 
 export default function Login() {
   const router = useRouter();
+  const { returnUrl } = router.query;
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState("password"); // "password" or "otp"
   const [isRequestingOtp, setIsRequestingOtp] = useState(false);
@@ -57,7 +58,13 @@ export default function Login() {
         // Store the token and user info
         setAuth(response.data.token, response.data.user);
         toast.success("Login successful!");
-        router.push("/user/dashboard");
+
+        // Redirect to returnUrl if provided, otherwise to dashboard
+        if (returnUrl) {
+          router.push(decodeURIComponent(returnUrl));
+        } else {
+          router.push("/user/dashboard");
+        }
       }
     } catch (error) {
       // Check if the error is due to wrong authentication method

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useDropzone } from "react-dropzone";
 import { Formik, Form, Field, ErrorMessage } from "formik";
@@ -14,6 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 import httpClient, { API_PATHS } from "../../utils/httpClient";
 import { handleApiErrorWithToast } from "../../utils/errorHandler";
+import { isAuthenticated, withAuth } from "../../utils/auth";
 import LoadingButton from "../../components/LoadingButton";
 
 // Validation schema
@@ -25,13 +26,46 @@ const TaxFilingSchema = Yup.object().shape({
     .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN format")
     .required("PAN is required"),
   hasIncomeTaxLogin: Yup.boolean(),
-  incomeTaxLoginCredentials: Yup.string().when("hasIncomeTaxLogin", {
+  itLoginId: Yup.string().when("hasIncomeTaxLogin", {
     is: true,
-    then: () =>
-      Yup.string().required("Income tax login credentials are required"),
+    then: () => Yup.string().required("IT Login ID is required"),
+    otherwise: () => Yup.string().notRequired(),
+  }),
+  itLoginPassword: Yup.string().when("hasIncomeTaxLogin", {
+    is: true,
+    then: () => Yup.string().required("IT Login Password is required"),
     otherwise: () => Yup.string().notRequired(),
   }),
   hasHomeLoan: Yup.boolean(),
+  homeLoanSanctionDate: Yup.string().when("hasHomeLoan", {
+    is: true,
+    then: () => Yup.string().required("Sanction date is required"),
+    otherwise: () => Yup.string().notRequired(),
+  }),
+  homeLoanAmount: Yup.number().when("hasHomeLoan", {
+    is: true,
+    then: () =>
+      Yup.number()
+        .required("Total loan amount is required")
+        .positive("Amount must be positive"),
+    otherwise: () => Yup.number().notRequired(),
+  }),
+  homeLoanCurrentDue: Yup.number().when("hasHomeLoan", {
+    is: true,
+    then: () =>
+      Yup.number()
+        .required("Current due amount is required")
+        .positive("Amount must be positive"),
+    otherwise: () => Yup.number().notRequired(),
+  }),
+  homeLoanInterest: Yup.number().when("hasHomeLoan", {
+    is: true,
+    then: () =>
+      Yup.number()
+        .required("Total interest is required")
+        .positive("Amount must be positive"),
+    otherwise: () => Yup.number().notRequired(),
+  }),
   hasPRAN: Yup.boolean(),
   pranNumber: Yup.string().when("hasPRAN", {
     is: true,
@@ -40,7 +74,7 @@ const TaxFilingSchema = Yup.object().shape({
   }),
 });
 
-export default function TaxFiling() {
+function TaxFiling() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -56,6 +90,8 @@ export default function TaxFiling() {
     aadharCard: null,
     otherDocument: null,
   });
+
+  // Authentication is now handled by withAuth HOC
 
   // File upload configuration
   const fileConfig = {
@@ -176,6 +212,13 @@ export default function TaxFiling() {
   };
 
   const handleSubmit = async (values, { resetForm }) => {
+    // Check if user is authenticated before submitting
+    if (!isAuthenticated()) {
+      toast.error("You must be logged in to submit this form");
+      router.push(`/login?returnUrl=${encodeURIComponent(router.asPath)}`);
+      return;
+    }
+
     // Validate required file uploads
     const requiredFiles = [
       { name: "form16", label: "Form 16" },
@@ -364,8 +407,13 @@ export default function TaxFiling() {
                     phone: "",
                     pan: "",
                     hasIncomeTaxLogin: false,
-                    incomeTaxLoginCredentials: "",
+                    itLoginId: "",
+                    itLoginPassword: "",
                     hasHomeLoan: false,
+                    homeLoanSanctionDate: "",
+                    homeLoanAmount: "",
+                    homeLoanCurrentDue: "",
+                    homeLoanInterest: "",
                     hasPRAN: false,
                     pranNumber: "",
                   }}
@@ -501,24 +549,62 @@ export default function TaxFiling() {
                         </div>
 
                         {values.hasIncomeTaxLogin && (
-                          <div className="mt-3 ml-6">
-                            <Field
-                              type="text"
-                              name="incomeTaxLoginCredentials"
-                              id="incomeTaxLoginCredentials"
-                              placeholder="Enter your income tax login credentials"
-                              className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                                errors.incomeTaxLoginCredentials &&
-                                touched.incomeTaxLoginCredentials
-                                  ? "border-red-500"
-                                  : "border-gray-300"
-                              }`}
-                            />
-                            <ErrorMessage
-                              name="incomeTaxLoginCredentials"
-                              component="div"
-                              className="mt-1 text-sm text-red-600"
-                            />
+                          <div className="mt-3 ml-6 space-y-4">
+                            {/* IT Login ID */}
+                            <div>
+                              <label
+                                htmlFor="itLoginId"
+                                className="block text-sm font-medium text-gray-700"
+                              >
+                                IT Login ID
+                              </label>
+                              <Field
+                                type="text"
+                                name="itLoginId"
+                                id="itLoginId"
+                                placeholder="Enter your IT Login ID"
+                                value={
+                                  values.pan ? values.pan : values.itLoginId
+                                }
+                                className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                                  errors.itLoginId && touched.itLoginId
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                              />
+                              <ErrorMessage
+                                name="itLoginId"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                            </div>
+
+                            {/* IT Login Password */}
+                            <div>
+                              <label
+                                htmlFor="itLoginPassword"
+                                className="block text-sm font-medium text-gray-700"
+                              >
+                                IT Login Password
+                              </label>
+                              <Field
+                                type="password"
+                                name="itLoginPassword"
+                                id="itLoginPassword"
+                                placeholder="Enter your IT Login Password"
+                                className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                                  errors.itLoginPassword &&
+                                  touched.itLoginPassword
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                              />
+                              <ErrorMessage
+                                name="itLoginPassword"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
@@ -539,6 +625,118 @@ export default function TaxFiling() {
                             Home Loan Interest Certificate?
                           </label>
                         </div>
+
+                        {values.hasHomeLoan && (
+                          <div className="mt-3 ml-6 space-y-4">
+                            {/* Sanction Date */}
+                            <div>
+                              <label
+                                htmlFor="homeLoanSanctionDate"
+                                className="block text-sm font-medium text-gray-700"
+                              >
+                                Sanction Date (dd/mm/yyyy)
+                              </label>
+                              <Field
+                                type="text"
+                                name="homeLoanSanctionDate"
+                                id="homeLoanSanctionDate"
+                                placeholder="DD/MM/YYYY"
+                                className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                                  errors.homeLoanSanctionDate &&
+                                  touched.homeLoanSanctionDate
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                              />
+                              <ErrorMessage
+                                name="homeLoanSanctionDate"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                            </div>
+
+                            {/* Total Loan Amount */}
+                            <div>
+                              <label
+                                htmlFor="homeLoanAmount"
+                                className="block text-sm font-medium text-gray-700"
+                              >
+                                Total Loan Amount (INR)
+                              </label>
+                              <Field
+                                type="number"
+                                name="homeLoanAmount"
+                                id="homeLoanAmount"
+                                placeholder="Enter amount in INR"
+                                className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                                  errors.homeLoanAmount &&
+                                  touched.homeLoanAmount
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                              />
+                              <ErrorMessage
+                                name="homeLoanAmount"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                            </div>
+
+                            {/* Current Due Amount */}
+                            <div>
+                              <label
+                                htmlFor="homeLoanCurrentDue"
+                                className="block text-sm font-medium text-gray-700"
+                              >
+                                Current Due Amount (INR)
+                              </label>
+                              <Field
+                                type="number"
+                                name="homeLoanCurrentDue"
+                                id="homeLoanCurrentDue"
+                                placeholder="Enter amount in INR"
+                                className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                                  errors.homeLoanCurrentDue &&
+                                  touched.homeLoanCurrentDue
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                              />
+                              <ErrorMessage
+                                name="homeLoanCurrentDue"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                            </div>
+
+                            {/* Total Interest */}
+                            <div>
+                              <label
+                                htmlFor="homeLoanInterest"
+                                className="block text-sm font-medium text-gray-700"
+                              >
+                                Total Interest (INR)
+                              </label>
+                              <Field
+                                type="number"
+                                name="homeLoanInterest"
+                                id="homeLoanInterest"
+                                placeholder="Enter amount in INR"
+                                className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                                  errors.homeLoanInterest &&
+                                  touched.homeLoanInterest
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                              />
+                              <ErrorMessage
+                                name="homeLoanInterest"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* PRAN Number */}
@@ -703,3 +901,6 @@ export default function TaxFiling() {
     </Layout>
   );
 }
+
+// Export with authentication protection
+export default withAuth(TaxFiling);

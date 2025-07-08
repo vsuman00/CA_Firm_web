@@ -28,20 +28,25 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
+    "/contact": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/contact.js"
+    ],
     "/login": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/login.js"
     ],
-    "/services": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/services.js"
-    ],
     "/services/tax-filing": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/services/tax-filing.js"
+    ],
+    "/user/dashboard": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/user/dashboard.js"
     ]
   },
   "ampFirstPages": []
