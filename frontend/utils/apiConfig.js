@@ -4,13 +4,16 @@
  * to prevent mismatches between frontend and backend
  */
 
-const API_PATHS = {
+export const API_PATHS = {
   AUTH: {
     LOGIN: "/api/auth/login",
     REGISTER: "/api/auth/register",
     ME: "/api/auth/me",
     PROFILE: "/api/auth/profile",
     PASSWORD: "/api/auth/password",
+    REQUEST_OTP: "/api/auth/request-otp",
+    VERIFY_OTP: "/api/auth/verify-otp",
+    TOGGLE_OTP: "/api/auth/toggle-otp",
   },
   ADMIN: {
     FORMS: "/api/admin/forms",

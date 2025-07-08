@@ -10,24 +10,48 @@ import Layout from "../components/Layout";
 import { handleApiErrorWithToast } from "../utils/errorHandler";
 import LoadingButton from "../components/LoadingButton";
 
-const LoginSchema = Yup.object().shape({
+// Schema for password-based login
+const PasswordLoginSchema = Yup.object().shape({
   email: Yup.string()
     .email("Invalid email address")
     .required("Email is required"),
   password: Yup.string().required("Password is required"),
 });
 
+// Schema for OTP-based login
+const OtpLoginSchema = Yup.object().shape({
+  email: Yup.string()
+    .email("Invalid email address")
+    .required("Email is required"),
+  otp: Yup.string()
+    .required("OTP is required")
+    .matches(/^[0-9]{6}$/, "OTP must be 6 digits"),
+});
+
 export default function Login() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [loginMethod, setLoginMethod] = useState("password"); // "password" or "otp"
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
+  const [otpRequested, setOtpRequested] = useState(false);
 
+  // Handle login form submission
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     try {
-      const response = await httpClient.post(API_PATHS.AUTH.LOGIN, {
+      // Prepare login payload based on login method
+      const payload = {
         email: values.email,
-        password: values.password,
         role: "user", // Specify user role
-      });
+      };
+
+      // Add either password or OTP based on login method
+      if (loginMethod === "password") {
+        payload.password = values.password;
+      } else {
+        payload.otp = values.otp;
+      }
+
+      const response = await httpClient.post(API_PATHS.AUTH.LOGIN, payload);
 
       if (response.data.token) {
         // Store the token and user info
@@ -36,13 +60,41 @@ export default function Login() {
         router.push("/user/dashboard");
       }
     } catch (error) {
-      handleApiErrorWithToast(error, "Failed to login. Please try again.");
-      setErrors({
-        auth:
-          error.response?.data?.message || "Failed to login. Please try again.",
-      });
+      // Check if the error is due to wrong authentication method
+      if (error.response?.data?.authMethod) {
+        setLoginMethod(error.response.data.authMethod);
+        setErrors({
+          auth: error.response.data.message,
+        });
+      } else {
+        handleApiErrorWithToast(error, "Failed to login. Please try again.");
+        setErrors({
+          auth:
+            error.response?.data?.message ||
+            "Failed to login. Please try again.",
+        });
+      }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Handle requesting OTP
+  const handleRequestOtp = async (email) => {
+    if (!email) {
+      toast.error("Please enter your email address");
+      return;
+    }
+
+    try {
+      setIsRequestingOtp(true);
+      await httpClient.post(API_PATHS.AUTH.REQUEST_OTP, { email });
+      toast.success("OTP sent to your email");
+      setOtpRequested(true);
+    } catch (error) {
+      handleApiErrorWithToast(error, "Failed to send OTP. Please try again.");
+    } finally {
+      setIsRequestingOtp(false);
     }
   };
 
@@ -67,8 +119,12 @@ export default function Login() {
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <Formik
-              initialValues={{ email: "", password: "" }}
-              validationSchema={LoginSchema}
+              initialValues={{ email: "", password: "", otp: "" }}
+              validationSchema={
+                loginMethod === "password"
+                  ? PasswordLoginSchema
+                  : OtpLoginSchema
+              }
               onSubmit={handleSubmit}
             >
               {({ isSubmitting, errors }) => (
@@ -108,35 +164,79 @@ export default function Login() {
                     </div>
                   </div>
 
-                  <div>
-                    <label
-                      htmlFor="password"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Password
-                    </label>
-                    <div className="mt-1 relative">
-                      <Field
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="current-password"
-                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-                        onClick={() => setShowPassword(!showPassword)}
+                  {loginMethod === "password" ? (
+                    <div>
+                      <label
+                        htmlFor="password"
+                        className="block text-sm font-medium text-gray-700"
                       >
-                        {showPassword ? "Hide" : "Show"}
-                      </button>
-                      <ErrorMessage
-                        name="password"
-                        component="div"
-                        className="mt-1 text-sm text-red-600"
-                      />
+                        Password
+                      </label>
+                      <div className="mt-1 relative">
+                        <Field
+                          id="password"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
+                          className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? "Hide" : "Show"}
+                        </button>
+                        <ErrorMessage
+                          name="password"
+                          component="div"
+                          className="mt-1 text-sm text-red-600"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div>
+                      <div className="flex justify-between items-center">
+                        <label
+                          htmlFor="otp"
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          One-Time Password (OTP)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const email =
+                              document.getElementById("email").value;
+                            handleRequestOtp(email);
+                          }}
+                          className="text-xs text-primary-600 hover:text-primary-500"
+                          disabled={isRequestingOtp}
+                        >
+                          {isRequestingOtp
+                            ? "Sending..."
+                            : otpRequested
+                            ? "Resend OTP"
+                            : "Request OTP"}
+                        </button>
+                      </div>
+                      <div className="mt-1">
+                        <Field
+                          id="otp"
+                          name="otp"
+                          type="text"
+                          maxLength="6"
+                          placeholder="Enter 6-digit OTP"
+                          className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        />
+                        <ErrorMessage
+                          name="otp"
+                          component="div"
+                          className="mt-1 text-sm text-red-600"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -155,13 +255,31 @@ export default function Login() {
                     </div>
 
                     <div className="text-sm">
-                      <Link
-                        href="/forgot-password"
-                        className="font-medium text-primary-600 hover:text-primary-500"
-                      >
-                        Forgot your password?
-                      </Link>
+                      {loginMethod === "password" ? (
+                        <Link
+                          href="/forgot-password"
+                          className="font-medium text-primary-600 hover:text-primary-500"
+                        >
+                          Forgot your password?
+                        </Link>
+                      ) : null}
                     </div>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setLoginMethod(
+                          loginMethod === "password" ? "otp" : "password"
+                        )
+                      }
+                      className="text-sm text-primary-600 hover:text-primary-500"
+                    >
+                      {loginMethod === "password"
+                        ? "Use one-time password (OTP) instead"
+                        : "Use password instead"}
+                    </button>
                   </div>
 
                   <div>

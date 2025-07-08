@@ -1,52 +1,122 @@
 const express = require("express");
 const router = express.Router();
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const { protect } = require("../middleware/auth");
+const { protect, admin } = require("../middleware/auth");
+const { check, validationResult } = require("express-validator");
+const otpUtils = require("../utils/otpUtils");
 
-// @route   POST /api/auth/login
-// @desc    Authenticate admin & get token
+// @route   POST api/auth/login
+// @desc    Authenticate user & get token
 // @access  Public
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    // Check if user exists
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+router.post(
+  "/login",
+  [
+    check("email", "Please include a valid email").isEmail(),
+    // Password is not required if OTP is provided
+    check("password", "Password is required").optional({ checkFalsy: true }),
+    check("otp", "OTP must be 6 digits")
+      .optional({ checkFalsy: true })
+      .isLength({ min: 6, max: 6 }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
 
-    // Check if password matches
-    const isMatch = await user.comparePassword(password);
+    const { email, password, otp, role } = req.body;
 
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    try {
+      // See if user exists
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid credentials" });
+      }
+
+      // Check if the user has the required role
+      if (role && user.role !== role) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      let isAuthenticated = false;
+
+      // Check if user is using OTP authentication
+      if (user.useOTP) {
+        // If user is using OTP but password was provided
+        if (password && !otp) {
+          return res.status(400).json({
+            message:
+              "This account uses OTP authentication. Please request an OTP.",
+            authMethod: "otp",
+          });
+        }
+
+        // Verify OTP
+        if (otp) {
+          isAuthenticated = await otpUtils.verifyOTP(email, otp);
+          if (!isAuthenticated) {
+            return res.status(400).json({ message: "Invalid or expired OTP" });
+          }
+        } else {
+          return res.status(400).json({ message: "OTP is required" });
+        }
+      } else {
+        // User is using password authentication
+        // If user is using password but OTP was provided
+        if (otp && !password) {
+          return res.status(400).json({
+            message:
+              "This account uses password authentication. Please provide your password.",
+            authMethod: "password",
+          });
+        }
+
+        // Check password
+        if (password) {
+          isAuthenticated = await user.comparePassword(password);
+          if (!isAuthenticated) {
+            return res.status(400).json({ message: "Invalid credentials" });
+          }
+        } else {
+          return res.status(400).json({ message: "Password is required" });
+        }
+      }
+
+      // Return jsonwebtoken
+      const payload = {
+        user: {
+          id: user.id,
+          role: user.role,
+        },
+      };
+
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: "5 days" },
+        (err, token) => {
+          if (err) throw err;
+          res.json({
+            token,
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              useOTP: user.useOTP,
+            },
+          });
+        }
+      );
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send("Server error");
     }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Server error" });
   }
-});
+);
 
 // @route   GET /api/auth/me
 // @desc    Get current user
@@ -144,48 +214,191 @@ router.put("/password", protect, async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/register
-// @desc    Register a new user
+// @route   POST api/auth/register
+// @desc    Register user
 // @access  Public
-router.post("/register", async (req, res) => {
-  const { name, email, password, role } = req.body;
-
-  try {
-    // Check if user already exists
-    let user = await User.findOne({ email });
-
-    if (user) {
-      return res.status(400).json({ message: "User already exists" });
+router.post(
+  "/register",
+  [
+    check("name", "Name is required").not().isEmpty(),
+    check("email", "Please include a valid email").isEmail(),
+    check("password", "Please enter a password with 6 or more characters")
+      .optional({ checkFalsy: true }) // Password is optional if using OTP
+      .isLength({ min: 6 }),
+    check("useOTP", "useOTP must be a boolean").optional().isBoolean(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
 
-    // Create new user
-    user = new User({
-      name,
-      email,
-      password,
-      role: role || "user", // Default to user role if not specified
-    });
+    const { name, email, password, role = "user", useOTP = false } = req.body;
+
+    try {
+      // See if user exists
+      let user = await User.findOne({ email });
+
+      if (user) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      // Validate that password is provided if not using OTP
+      if (!useOTP && !password) {
+        return res.status(400).json({
+          message: "Password is required when not using OTP authentication",
+        });
+      }
+
+      // Create user
+      user = new User({
+        name,
+        email,
+        password: useOTP ? undefined : password, // Only set password if not using OTP
+        role,
+        useOTP,
+      });
+
+      // Save user to database
+      await user.save();
+
+      // If using OTP, generate and send one
+      if (useOTP) {
+        await otpUtils.generateAndSaveOTP(email);
+      }
+
+      // Return jsonwebtoken
+      const payload = {
+        user: {
+          id: user.id,
+          role: user.role,
+        },
+      };
+
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: "5 days" },
+        (err, token) => {
+          if (err) throw err;
+          res.json({
+            token,
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              useOTP: user.useOTP,
+            },
+          });
+        }
+      );
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send("Server error");
+    }
+  }
+);
+
+// @route   POST /api/auth/request-otp
+// @desc    Request a new OTP for login
+// @access  Public
+router.post("/request-otp", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    // Check if user exists
+    const user = await User.findOne({ email });
+
+    // If user doesn't exist, return success anyway to prevent email enumeration
+    if (!user) {
+      // For security reasons, don't reveal that the user doesn't exist
+      return res.status(200).json({
+        message: "If your email is registered, you will receive an OTP",
+      });
+    }
+
+    // Generate and save OTP
+    await otpUtils.generateAndSaveOTP(email);
+
+    res.status(200).json({ message: "OTP sent successfully" });
+  } catch (error) {
+    console.error("Request OTP error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// @route   POST /api/auth/verify-otp
+// @desc    Verify OTP without login
+// @access  Public
+router.post("/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Email and OTP are required" });
+  }
+
+  try {
+    // Verify OTP
+    const isValid = await otpUtils.verifyOTP(email, otp);
+
+    if (!isValid) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    res.status(200).json({ message: "OTP verified successfully" });
+  } catch (error) {
+    console.error("Verify OTP error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// @route   POST /api/auth/toggle-otp
+// @desc    Toggle OTP authentication for a user
+// @access  Private
+router.post("/toggle-otp", protect, async (req, res) => {
+  try {
+    // Get user
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Toggle useOTP flag
+    user.useOTP = !user.useOTP;
+
+    // If enabling OTP, clear password
+    if (user.useOTP) {
+      user.password = undefined;
+      // Generate and send OTP
+      await otpUtils.generateAndSaveOTP(user.email);
+    } else {
+      // If disabling OTP, require password
+      if (!req.body.password) {
+        return res
+          .status(400)
+          .json({ message: "Password is required when disabling OTP" });
+      }
+
+      // Set password
+      user.password = req.body.password;
+    }
 
     await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+    res.json({
+      message: user.useOTP
+        ? "OTP authentication enabled"
+        : "OTP authentication disabled",
+      useOTP: user.useOTP,
     });
   } catch (error) {
-    console.error("Register error:", error);
+    console.error("Toggle OTP error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
