@@ -198,8 +198,7 @@ export default function Header() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1, duration: 0.3 }}
                     >
-                      <Disclosure.Button
-                        as="a"
+                      <Link
                         href={item.href}
                         className={`block py-2 pl-3 pr-4 text-base font-medium ${
                           isActive
@@ -208,7 +207,7 @@ export default function Header() {
                         }`}
                       >
                         {item.name}
-                      </Disclosure.Button>
+                      </Link>
                     </motion.div>
                   );
                 })}
@@ -223,8 +222,7 @@ export default function Header() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3, duration: 0.3 }}
                     >
-                      <Disclosure.Button
-                        as="a"
+                      <Link
                         href="/user/dashboard"
                         className="block px-4 py-2 text-base font-medium text-primary-600 hover:bg-primary-50 hover:text-primary-700 transition-colors duration-200"
                       >
@@ -232,7 +230,7 @@ export default function Header() {
                           <UserIcon className="h-5 w-5 mr-2" />
                           Dashboard
                         </span>
-                      </Disclosure.Button>
+                      </Link>
                     </motion.div>
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
@@ -255,26 +253,24 @@ export default function Header() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3, duration: 0.3 }}
                     >
-                      <Disclosure.Button
-                        as="a"
+                      <Link
                         href="/login"
                         className="block px-4 py-2 text-base font-medium text-primary-600 hover:bg-primary-50 hover:text-primary-700 transition-colors duration-200"
                       >
                         Sign In
-                      </Disclosure.Button>
+                      </Link>
                     </motion.div>
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4, duration: 0.3 }}
                     >
-                      <Disclosure.Button
-                        as="a"
+                      <Link
                         href="/register"
                         className="block px-4 py-2 text-base font-medium text-primary-600 hover:bg-primary-50 hover:text-primary-700 transition-colors duration-200"
                       >
                         Register
-                      </Disclosure.Button>
+                      </Link>
                     </motion.div>
                   </div>
                 )}

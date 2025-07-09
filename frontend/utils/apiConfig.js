@@ -25,6 +25,8 @@ export const API_PATHS = {
   FORMS: {
     TAX: "/api/forms/tax",
     CONTACT: "/api/forms/contact",
+    USER_SUBMISSIONS: "/api/forms/user-submissions",
+    USER_SUBMISSION_DETAIL: (id) => `/api/forms/user-submissions/${id}`,
   },
 };
 

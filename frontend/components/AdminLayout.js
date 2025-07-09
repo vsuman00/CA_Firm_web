@@ -88,16 +88,23 @@ export default function AdminLayout({ children }) {
                           ? "bg-primary-800 text-white"
                           : "text-primary-100 hover:bg-primary-600 hover:text-white"
                       }`}
+                      legacyBehavior
                     >
-                      <item.icon
-                        className={`mr-4 h-6 w-6 ${
-                          router.pathname === item.href
-                            ? "text-primary-300"
-                            : "text-primary-300"
-                        }`}
-                        aria-hidden="true"
-                      />
-                      {item.name}
+                      <a className={`group flex items-center px-2 py-2 text-base font-medium rounded-md ${
+                        router.pathname === item.href
+                          ? "bg-primary-800 text-white"
+                          : "text-primary-100 hover:bg-primary-600 hover:text-white"
+                      }`}>
+                        <item.icon
+                          className={`mr-4 h-6 w-6 ${
+                            router.pathname === item.href
+                              ? "text-primary-300"
+                              : "text-primary-300"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                      </a>
                     </Link>
                   ))}
                   <button
@@ -154,16 +161,23 @@ export default function AdminLayout({ children }) {
                       ? "bg-primary-800 text-white"
                       : "text-primary-100 hover:bg-primary-600 hover:text-white"
                   }`}
+                  legacyBehavior
                 >
-                  <item.icon
-                    className={`mr-3 h-6 w-6 ${
-                      router.pathname === item.href
-                        ? "text-primary-300"
-                        : "text-primary-300"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  {item.name}
+                  <a className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                    router.pathname === item.href
+                      ? "bg-primary-800 text-white"
+                      : "text-primary-100 hover:bg-primary-600 hover:text-white"
+                  }`}>
+                    <item.icon
+                      className={`mr-3 h-6 w-6 ${
+                        router.pathname === item.href
+                          ? "text-primary-300"
+                          : "text-primary-300"
+                      }`}
+                      aria-hidden="true"
+                    />
+                    {item.name}
+                  </a>
                 </Link>
               ))}
               <button

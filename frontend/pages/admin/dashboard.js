@@ -165,8 +165,9 @@ function Dashboard() {
                   <Link
                     href="/admin/tax-forms?status=Pending"
                     className="font-medium text-primary-600 hover:text-primary-900"
+                    legacyBehavior
                   >
-                    View all
+                    <a className="font-medium text-primary-600 hover:text-primary-900">View all</a>
                   </Link>
                 </div>
               </div>
@@ -201,8 +202,9 @@ function Dashboard() {
                   <Link
                     href="/admin/tax-forms?status=Reviewed"
                     className="font-medium text-primary-600 hover:text-primary-900"
+                    legacyBehavior
                   >
-                    View all
+                    <a className="font-medium text-primary-600 hover:text-primary-900">View all</a>
                   </Link>
                 </div>
               </div>
@@ -237,8 +239,9 @@ function Dashboard() {
                   <Link
                     href="/admin/tax-forms?status=Filed"
                     className="font-medium text-primary-600 hover:text-primary-900"
+                    legacyBehavior
                   >
-                    View all
+                    <a className="font-medium text-primary-600 hover:text-primary-900">View all</a>
                   </Link>
                 </div>
               </div>
@@ -273,8 +276,9 @@ function Dashboard() {
                   <Link
                     href="/admin/contact-messages"
                     className="font-medium text-primary-600 hover:text-primary-900"
+                    legacyBehavior
                   >
-                    View all
+                    <a className="font-medium text-primary-600 hover:text-primary-900">View all</a>
                   </Link>
                 </div>
               </div>
@@ -294,7 +298,9 @@ function Dashboard() {
                       <Link
                         href={`/admin/tax-forms/${form._id}`}
                         className="block hover:bg-gray-50"
+                        legacyBehavior
                       >
+                        <a className="block hover:bg-gray-50">
                         <div className="px-4 py-4 sm:px-6">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center">
@@ -340,6 +346,7 @@ function Dashboard() {
                             </div>
                           </div>
                         </div>
+                        </a>
                       </Link>
                     </li>
                   ))
@@ -353,8 +360,9 @@ function Dashboard() {
                 <Link
                   href="/admin/tax-forms"
                   className="font-medium text-primary-600 hover:text-primary-900"
+                  legacyBehavior
                 >
-                  View all tax forms
+                  <a className="font-medium text-primary-600 hover:text-primary-900">View all tax forms</a>
                 </Link>
               </div>
             </div>

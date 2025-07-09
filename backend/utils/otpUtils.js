@@ -78,6 +78,16 @@ const generateAndSaveOTP = async (email) => {
     // Save OTP to user record
     await User.findOneAndUpdate({ email }, { otp, otpExpiry }, { new: true });
 
+    // Send OTP via email
+    try {
+      await sendOTPByEmail(email, otp);
+      console.log(`OTP sent successfully to ${email}`);
+    } catch (emailError) {
+      console.error("Failed to send OTP email:", emailError);
+      // Continue execution even if email fails
+      // This allows the OTP to be saved in the database even if email sending fails
+    }
+
     return otp;
   } catch (error) {
     console.error("Error generating OTP:", error);

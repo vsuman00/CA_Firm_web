@@ -7,11 +7,11 @@ import toast from "react-hot-toast";
 import httpClient, { API_PATHS } from "../utils/httpClient";
 import { setAuth } from "../utils/auth";
 import Layout from "../components/Layout";
-import { handleApiErrorWithToast } from "../utils/errorHandler";
+import { handleApiErrorWithToast, handleApiError } from "../utils/errorHandler";
 import LoadingButton from "../components/LoadingButton";
 
-// Schema for password-based registration
-const PasswordRegisterSchema = Yup.object().shape({
+// Schema for registration
+const RegisterSchema = Yup.object().shape({
   name: Yup.string().required("Full name is required"),
   email: Yup.string()
     .email("Invalid email address")
@@ -22,22 +22,12 @@ const PasswordRegisterSchema = Yup.object().shape({
   confirmPassword: Yup.string()
     .oneOf([Yup.ref("password"), null], "Passwords must match")
     .required("Confirm password is required"),
-  useOTP: Yup.boolean(),
 });
 
-// Schema for OTP-based registration
-const OtpRegisterSchema = Yup.object().shape({
-  name: Yup.string().required("Full name is required"),
-  email: Yup.string()
-    .email("Invalid email address")
-    .required("Email is required"),
-  useOTP: Yup.boolean().oneOf([true], "OTP option is required"),
-});
 
 export default function Register() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [useOTP, setUseOTP] = useState(false);
 
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     try {
@@ -45,14 +35,9 @@ export default function Register() {
       const payload = {
         name: values.name,
         email: values.email,
+        password: values.password,
         role: "user", // Specify user role
-        useOTP: values.useOTP,
       };
-
-      // Add password only if not using OTP
-      if (!values.useOTP) {
-        payload.password = values.password;
-      }
 
       const response = await httpClient.post(API_PATHS.AUTH.REGISTER, payload);
 
@@ -61,31 +46,34 @@ export default function Register() {
         setAuth(response.data.token, response.data.user);
         toast.success("Registration successful!");
 
-        // If using OTP, show a message about OTP verification
-        if (values.useOTP) {
-          toast.success("You will receive an OTP for future logins");
-        }
-
         router.push("/user/dashboard");
       }
     } catch (error) {
-      handleApiErrorWithToast(error, "Failed to register. Please try again.");
+      console.error("Registration API error:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+      
+      // Use the improved error handler to get a user-friendly message
+      const errorMessage = handleApiError(error, "Failed to register. Please try again.");
+      
+      // Don't show toast for validation errors, only for unexpected errors
+      if (!error.response?.data?.code && 
+          error.response?.data?.message !== "User already exists") {
+        toast.error(errorMessage);
+      }
+      
       setErrors({
-        auth:
-          error.response?.data?.message ||
-          "Failed to register. Please try again.",
+        auth: errorMessage
       });
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Toggle OTP authentication method
-  const toggleOTPMethod = (setFieldValue) => {
-    const newValue = !useOTP;
-    setUseOTP(newValue);
-    setFieldValue("useOTP", newValue);
-  };
+
 
   return (
     <Layout>
@@ -113,11 +101,8 @@ export default function Register() {
                 email: "",
                 password: "",
                 confirmPassword: "",
-                useOTP: false,
               }}
-              validationSchema={
-                useOTP ? OtpRegisterSchema : PasswordRegisterSchema
-              }
+              validationSchema={RegisterSchema}
               onSubmit={handleSubmit}
             >
               {({ isSubmitting, errors }) => (
@@ -180,107 +165,60 @@ export default function Register() {
                     </div>
                   </div>
 
-                  {!useOTP && (
-                    <>
-                      <div>
-                        <label
-                          htmlFor="password"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Password
-                        </label>
-                        <div className="mt-1 relative">
-                          <Field
-                            id="password"
-                            name="password"
-                            type={showPassword ? "text" : "password"}
-                            autoComplete="new-password"
-                            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                          />
-                          <button
-                            type="button"
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? "Hide" : "Show"}
-                          </button>
-                          <ErrorMessage
-                            name="password"
-                            component="div"
-                            className="mt-1 text-sm text-red-600"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="confirmPassword"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Confirm Password
-                        </label>
-                        <div className="mt-1">
-                          <Field
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            type={showPassword ? "text" : "password"}
-                            autoComplete="new-password"
-                            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                          />
-                          <ErrorMessage
-                            name="confirmPassword"
-                            component="div"
-                            className="mt-1 text-sm text-red-600"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex items-center">
-                    <Field
-                      type="checkbox"
-                      id="useOTP"
-                      name="useOTP"
-                      checked={useOTP}
-                      onChange={() => toggleOTPMethod(setFieldValue)}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
+                  <div>
                     <label
-                      htmlFor="useOTP"
-                      className="ml-2 block text-sm text-gray-900"
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700"
                     >
-                      Use OTP for authentication instead of password
+                      Password
                     </label>
+                    <div className="mt-1 relative">
+                      <Field
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? "Hide" : "Show"}
+                      </button>
+                      <ErrorMessage
+                        name="password"
+                        component="div"
+                        className="mt-1 text-sm text-red-600"
+                      />
+                    </div>
                   </div>
 
-                  {useOTP && (
-                    <div className="bg-blue-50 p-4 rounded-md">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <svg
-                            className="h-5 w-5 text-blue-400"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            aria-hidden="true"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-blue-700">
-                            You will receive a 6-digit OTP via email for login.
-                            No password will be required.
-                          </p>
-                        </div>
-                      </div>
+                  <div>
+                    <label
+                      htmlFor="confirmPassword"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Confirm Password
+                    </label>
+                    <div className="mt-1">
+                      <Field
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      />
+                      <ErrorMessage
+                        name="confirmPassword"
+                        component="div"
+                        className="mt-1 text-sm text-red-600"
+                      />
                     </div>
-                  )}
+                  </div>
+
+
 
                   <div>
                     <LoadingButton

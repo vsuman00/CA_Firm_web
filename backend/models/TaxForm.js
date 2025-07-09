@@ -2,6 +2,20 @@ const mongoose = require("mongoose");
 
 // File schema for document uploads
 const FileSchema = new mongoose.Schema({
+  documentType: {
+    type: String,
+    required: true,
+    enum: [
+      "form16",
+      "bankStatement",
+      "investmentProof",
+      "tradingSummary",
+      "homeLoanCertificate",
+      "salarySlip",
+      "aadharCard",
+      "other"
+    ]
+  },
   fileName: {
     type: String,
     required: true,
@@ -68,16 +82,7 @@ const TaxFormSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  // Document uploads
-  form16: FileSchema,
-  bankStatements: FileSchema,
-  investmentProof: FileSchema,
-  tradingSummary: FileSchema,
-  homeLoanCertificate: FileSchema,
-  salarySlip: FileSchema,
-  aadharCard: FileSchema,
-  otherDocument: FileSchema,
-  // Legacy support for existing documents
+  // Document uploads - consolidated into a single array
   documents: [FileSchema],
   status: {
     type: String,

@@ -5,20 +5,7 @@
 
 import * as Yup from "yup";
 
-/**
- * Validation schema for tax filing form
- */
-export const TaxFilingSchema = Yup.object().shape({
-  fullName: Yup.string().required("Full name is required"),
-  email: Yup.string()
-    .email("Invalid email address")
-    .required("Email is required"),
-  phone: Yup.string().required("Phone number is required"),
-  pan: Yup.string()
-    .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN format")
-    .required("PAN is required"),
-  salaryInfo: Yup.string().required("Salary/Income information is required"),
-});
+// Tax Filing Schema removed
 
 /**
  * Validation schema for contact form
@@ -78,4 +65,10 @@ export const ProfileSchema = Yup.object().shape({
   email: Yup.string()
     .email("Invalid email address")
     .required("Email is required"),
+  pan: Yup.string()
+    .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN format")
+    .nullable(),
+  mobile: Yup.string()
+    .matches(/^[0-9]{10}$/, "Mobile number must be 10 digits")
+    .nullable(),
 });

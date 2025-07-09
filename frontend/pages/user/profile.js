@@ -39,6 +39,8 @@ function UserProfile() {
       const response = await httpClient.put("/api/auth/profile", {
         name: values.name,
         email: values.email,
+        pan: values.pan,
+        mobile: values.mobile,
       });
 
       setUser(response.data);
@@ -117,6 +119,8 @@ function UserProfile() {
                 initialValues={{
                   name: user?.name || "",
                   email: user?.email || "",
+                  pan: user?.pan || "",
+                  mobile: user?.mobile || "",
                 }}
                 validationSchema={ProfileSchema}
                 onSubmit={handleProfileUpdate}
@@ -162,6 +166,52 @@ function UserProfile() {
                         />
                         <ErrorMessage
                           name="email"
+                          component="div"
+                          className="mt-1 text-sm text-red-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="pan"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        PAN Number
+                      </label>
+                      <div className="mt-1">
+                        <Field
+                          id="pan"
+                          name="pan"
+                          type="text"
+                          placeholder="ABCDE1234F"
+                          className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        />
+                        <ErrorMessage
+                          name="pan"
+                          component="div"
+                          className="mt-1 text-sm text-red-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="mobile"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Mobile Number
+                      </label>
+                      <div className="mt-1">
+                        <Field
+                          id="mobile"
+                          name="mobile"
+                          type="text"
+                          placeholder="10-digit mobile number"
+                          className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                        />
+                        <ErrorMessage
+                          name="mobile"
                           component="div"
                           className="mt-1 text-sm text-red-600"
                         />

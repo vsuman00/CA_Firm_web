@@ -188,7 +188,7 @@ export default function Contact() {
                                 type="text"
                                 name="name"
                                 id="name"
-                                className={`mt-1 block w-full rounded-md ${
+                                className={`mt-1 block w-full rounded-md shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                                   errors.name && touched.name
                                     ? "border-red-500"
                                     : "border-gray-300"
@@ -212,7 +212,7 @@ export default function Contact() {
                                 type="email"
                                 name="email"
                                 id="email"
-                                className={`mt-1 block w-full rounded-md ${
+                                className={`mt-1 block w-full rounded-md shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                                   errors.email && touched.email
                                     ? "border-red-500"
                                     : "border-gray-300"
@@ -237,7 +237,7 @@ export default function Contact() {
                                 name="message"
                                 id="message"
                                 rows={6}
-                                className={`mt-1 block w-full rounded-md ${
+                                className={`mt-1 block w-full rounded-md shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                                   errors.message && touched.message
                                     ? "border-red-500"
                                     : "border-gray-300"

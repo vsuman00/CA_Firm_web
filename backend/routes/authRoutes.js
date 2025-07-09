@@ -21,23 +21,47 @@ router.post(
       .isLength({ min: 6, max: 6 }),
   ],
   async (req, res) => {
+    console.log("Login request received:", {
+      body: req.body,
+      headers: req.headers,
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log("Login validation errors:", errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { email, password, otp, role } = req.body;
+    console.log("Login credentials:", {
+      email,
+      hasPassword: !!password,
+      hasOtp: !!otp,
+      role,
+    });
 
     try {
       // See if user exists
       let user = await User.findOne({ email });
 
       if (!user) {
-        return res.status(400).json({ message: "Invalid credentials" });
+        console.log("Login failed: User not found", { email });
+        return res.status(400).json({ message: "Invalid credentials", code: "INVALID_LOGIN" });
       }
+
+      console.log("User found:", {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        useOTP: user.useOTP,
+      });
 
       // Check if the user has the required role
       if (role && user.role !== role) {
+        console.log("Login failed: Role mismatch", {
+          requestedRole: role,
+          userRole: user.role,
+        });
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -47,6 +71,7 @@ router.post(
       if (user.useOTP) {
         // If user is using OTP but password was provided
         if (password && !otp) {
+          console.log("Login failed: Password provided for OTP account");
           return res.status(400).json({
             message:
               "This account uses OTP authentication. Please request an OTP.",
@@ -57,16 +82,19 @@ router.post(
         // Verify OTP
         if (otp) {
           isAuthenticated = await otpUtils.verifyOTP(email, otp);
+          console.log("OTP verification result:", { isAuthenticated });
           if (!isAuthenticated) {
-            return res.status(400).json({ message: "Invalid or expired OTP" });
+            return res.status(400).json({ message: "Invalid or expired OTP", code: "INVALID_OTP" });
           }
         } else {
+          console.log("Login failed: OTP required but not provided");
           return res.status(400).json({ message: "OTP is required" });
         }
       } else {
         // User is using password authentication
         // If user is using password but OTP was provided
         if (otp && !password) {
+          console.log("Login failed: OTP provided for password account");
           return res.status(400).json({
             message:
               "This account uses password authentication. Please provide your password.",
@@ -77,10 +105,12 @@ router.post(
         // Check password
         if (password) {
           isAuthenticated = await user.comparePassword(password);
+          console.log("Password verification result:", { isAuthenticated });
           if (!isAuthenticated) {
-            return res.status(400).json({ message: "Invalid credentials" });
+            return res.status(400).json({ message: "Invalid credentials", code: "INVALID_PASSWORD" });
           }
         } else {
+          console.log("Login failed: Password required but not provided");
           return res.status(400).json({ message: "Password is required" });
         }
       }
@@ -98,7 +128,11 @@ router.post(
         process.env.JWT_SECRET,
         { expiresIn: "5 days" },
         (err, token) => {
-          if (err) throw err;
+          if (err) {
+            console.error("JWT sign error:", err);
+            throw err;
+          }
+          console.log("Login successful, token generated");
           res.json({
             token,
             user: {
@@ -112,7 +146,7 @@ router.post(
         }
       );
     } catch (err) {
-      console.error(err.message);
+      console.error("Login server error:", err);
       res.status(500).send("Server error");
     }
   }
@@ -139,12 +173,14 @@ router.get("/me", protect, async (req, res) => {
 // @access  Private
 router.put("/profile", protect, async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, pan, mobile } = req.body;
 
     // Build profile object
     const profileFields = {};
     if (name) profileFields.name = name;
     if (email) profileFields.email = email;
+    if (pan) profileFields.pan = pan;
+    if (mobile) profileFields.mobile = mobile;
 
     // Check if email is already in use by another user
     if (email) {
@@ -240,7 +276,7 @@ router.post(
       let user = await User.findOne({ email });
 
       if (user) {
-        return res.status(400).json({ message: "User already exists" });
+        return res.status(400).json({ message: "User already exists", code: "EMAIL_IN_USE" });
       }
 
       // Validate that password is provided if not using OTP

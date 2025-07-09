@@ -16,7 +16,7 @@ const services = [
     description:
       "Professional tax preparation and filing services for individuals and businesses.",
     icon: DocumentTextIcon,
-    href: "/services/tax-filing",
+    href: "/user/tax-filing",
     features: [
       "Personal income tax returns",
       "Business tax returns",
@@ -94,7 +94,7 @@ export default function Services() {
             {services.map((service) => (
               <div
                 key={service.id}
-                className="card hover:shadow-lg transition-shadow duration-300"
+                className="card transition-shadow duration-300 hover:shadow-lg"
               >
                 <div className="flex items-center">
                   <div className="flex-shrink-0">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import Layout from "../../components/Layout";
 import { withAuth } from "../../utils/auth";
@@ -84,6 +85,26 @@ function UserDashboard() {
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">{user?.email}</dd>
                 </div>
+                <div className="sm:col-span-1">
+                  <dt className="text-sm font-medium text-gray-500">
+                    PAN Number
+                  </dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {user?.pan ? user.pan : (
+                      <span className="text-gray-400 italic">Not provided</span>
+                    )}
+                  </dd>
+                </div>
+                <div className="sm:col-span-1">
+                  <dt className="text-sm font-medium text-gray-500">
+                    Mobile Number
+                  </dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {user?.mobile ? user.mobile : (
+                      <span className="text-gray-400 italic">Not provided</span>
+                    )}
+                  </dd>
+                </div>
               </dl>
             </div>
           </div>
@@ -125,12 +146,12 @@ function UserDashboard() {
               </div>
               <div className="bg-gray-50 px-5 py-3">
                 <div className="text-sm">
-                  <a
+                  <Link
                     href="/user/tax-filing"
                     className="font-medium text-primary-600 hover:text-primary-500"
                   >
-                    Start filing
-                  </a>
+                    File now
+                  </Link>
                 </div>
               </div>
             </div>
@@ -171,12 +192,12 @@ function UserDashboard() {
               </div>
               <div className="bg-gray-50 px-5 py-3">
                 <div className="text-sm">
-                  <a
+                  <Link
                     href="/user/submissions"
                     className="font-medium text-primary-600 hover:text-primary-500"
                   >
                     View all
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -217,12 +238,12 @@ function UserDashboard() {
               </div>
               <div className="bg-gray-50 px-5 py-3">
                 <div className="text-sm">
-                  <a
+                  <Link
                     href="/user/profile"
                     className="font-medium text-primary-600 hover:text-primary-500"
                   >
                     Update profile
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>

@@ -7,66 +7,69 @@ import toast from "react-hot-toast";
 import httpClient, { API_PATHS } from "../utils/httpClient";
 import { setAuth } from "../utils/auth";
 import Layout from "../components/Layout";
-import { handleApiErrorWithToast } from "../utils/errorHandler";
+import { handleApiErrorWithToast, handleApiError } from "../utils/errorHandler";
 import LoadingButton from "../components/LoadingButton";
 
-// Schema for password-based login
-const PasswordLoginSchema = Yup.object().shape({
+// Schema for login
+const LoginSchema = Yup.object().shape({
   email: Yup.string()
     .email("Invalid email address")
     .required("Email is required"),
   password: Yup.string().required("Password is required"),
 });
 
-// Schema for OTP-based login
-const OtpLoginSchema = Yup.object().shape({
-  email: Yup.string()
-    .email("Invalid email address")
-    .required("Email is required"),
-  otp: Yup.string()
-    .required("OTP is required")
-    .matches(/^[0-9]{6}$/, "OTP must be 6 digits"),
-});
 
 export default function Login() {
   const router = useRouter();
   const { returnUrl } = router.query;
   const [showPassword, setShowPassword] = useState(false);
-  const [loginMethod, setLoginMethod] = useState("password"); // "password" or "otp"
-  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
-  const [otpRequested, setOtpRequested] = useState(false);
+  const [loginMethod, setLoginMethod] = useState(null);
 
   // Handle login form submission
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     try {
-      // Prepare login payload based on login method
+      // Prepare login payload
       const payload = {
         email: values.email,
+        password: values.password,
         role: "user", // Specify user role
       };
 
-      // Add either password or OTP based on login method
-      if (loginMethod === "password") {
-        payload.password = values.password;
-      } else {
-        payload.otp = values.otp;
-      }
+      console.log("Login payload:", payload);
 
-      const response = await httpClient.post(API_PATHS.AUTH.LOGIN, payload);
+      try {
+        const response = await httpClient.post(API_PATHS.AUTH.LOGIN, payload);
+        console.log("Login response:", response.data);
 
-      if (response.data.token) {
-        // Store the token and user info
-        setAuth(response.data.token, response.data.user);
-        toast.success("Login successful!");
+        if (response.data.token) {
+          // Store the token and user info
+          setAuth(response.data.token, response.data.user);
+          toast.success("Login successful!");
 
-        // Redirect to returnUrl if provided, otherwise to dashboard
-        if (returnUrl) {
-          router.push(decodeURIComponent(returnUrl));
-        } else {
-          router.push("/user/dashboard");
+          // Redirect to returnUrl if provided, otherwise to dashboard
+          if (returnUrl) {
+            router.push(decodeURIComponent(returnUrl));
+          } else {
+            router.push("/user/dashboard");
+          }
         }
+      } catch (apiError) {
+        console.error("Login API error:", {
+          message: apiError.message,
+          status: apiError.response?.status,
+          data: apiError.response?.data,
+          headers: apiError.response?.headers,
+        });
+        throw apiError;
       }
     } catch (error) {
+      console.error("Login API error:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+      
       // Check if the error is due to wrong authentication method
       if (error.response?.data?.authMethod) {
         setLoginMethod(error.response.data.authMethod);
@@ -74,11 +77,17 @@ export default function Login() {
           auth: error.response.data.message,
         });
       } else {
-        handleApiErrorWithToast(error, "Failed to login. Please try again.");
+        // Use the improved error handler to get a user-friendly message
+        const errorMessage = handleApiError(error, "Failed to sign in. Please try again.");
+        
+        // Don't show toast for validation errors, only for unexpected errors
+        if (!error.response?.data?.code && 
+            error.response?.data?.message !== "Invalid credentials") {
+          toast.error(errorMessage);
+        }
+        
         setErrors({
-          auth:
-            error.response?.data?.message ||
-            "Failed to login. Please try again.",
+          auth: errorMessage
         });
       }
     } finally {
@@ -86,24 +95,7 @@ export default function Login() {
     }
   };
 
-  // Handle requesting OTP
-  const handleRequestOtp = async (email) => {
-    if (!email) {
-      toast.error("Please enter your email address");
-      return;
-    }
 
-    try {
-      setIsRequestingOtp(true);
-      await httpClient.post(API_PATHS.AUTH.REQUEST_OTP, { email });
-      toast.success("OTP sent to your email");
-      setOtpRequested(true);
-    } catch (error) {
-      handleApiErrorWithToast(error, "Failed to send OTP. Please try again.");
-    } finally {
-      setIsRequestingOtp(false);
-    }
-  };
 
   return (
     <Layout>
@@ -126,12 +118,8 @@ export default function Login() {
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <Formik
-              initialValues={{ email: "", password: "", otp: "" }}
-              validationSchema={
-                loginMethod === "password"
-                  ? PasswordLoginSchema
-                  : OtpLoginSchema
-              }
+              initialValues={{ email: "", password: "" }}
+              validationSchema={LoginSchema}
               onSubmit={handleSubmit}
             >
               {({ isSubmitting, errors }) => (
@@ -171,79 +159,35 @@ export default function Login() {
                     </div>
                   </div>
 
-                  {loginMethod === "password" ? (
-                    <div>
-                      <label
-                        htmlFor="password"
-                        className="block text-sm font-medium text-gray-700"
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Password
+                    </label>
+                    <div className="mt-1 relative">
+                      <Field
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+                        onClick={() => setShowPassword(!showPassword)}
                       >
-                        Password
-                      </label>
-                      <div className="mt-1 relative">
-                        <Field
-                          id="password"
-                          name="password"
-                          type={showPassword ? "text" : "password"}
-                          autoComplete="current-password"
-                          className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                        />
-                        <button
-                          type="button"
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? "Hide" : "Show"}
-                        </button>
-                        <ErrorMessage
-                          name="password"
-                          component="div"
-                          className="mt-1 text-sm text-red-600"
-                        />
-                      </div>
+                        {showPassword ? "Hide" : "Show"}
+                      </button>
+                      <ErrorMessage
+                        name="password"
+                        component="div"
+                        className="mt-1 text-sm text-red-600"
+                      />
                     </div>
-                  ) : (
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <label
-                          htmlFor="otp"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          One-Time Password (OTP)
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const email =
-                              document.getElementById("email").value;
-                            handleRequestOtp(email);
-                          }}
-                          className="text-xs text-primary-600 hover:text-primary-500"
-                          disabled={isRequestingOtp}
-                        >
-                          {isRequestingOtp
-                            ? "Sending..."
-                            : otpRequested
-                            ? "Resend OTP"
-                            : "Request OTP"}
-                        </button>
-                      </div>
-                      <div className="mt-1">
-                        <Field
-                          id="otp"
-                          name="otp"
-                          type="text"
-                          maxLength="6"
-                          placeholder="Enter 6-digit OTP"
-                          className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                        />
-                        <ErrorMessage
-                          name="otp"
-                          component="div"
-                          className="mt-1 text-sm text-red-600"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -262,32 +206,16 @@ export default function Login() {
                     </div>
 
                     <div className="text-sm">
-                      {loginMethod === "password" ? (
-                        <Link
-                          href="/forgot-password"
-                          className="font-medium text-primary-600 hover:text-primary-500"
-                        >
-                          Forgot your password?
-                        </Link>
-                      ) : null}
+                      <Link
+                        href="/forgot-password"
+                        className="font-medium text-primary-600 hover:text-primary-500"
+                      >
+                        Forgot your password?
+                      </Link>
                     </div>
                   </div>
 
-                  <div className="flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setLoginMethod(
-                          loginMethod === "password" ? "otp" : "password"
-                        )
-                      }
-                      className="text-sm text-primary-600 hover:text-primary-500"
-                    >
-                      {loginMethod === "password"
-                        ? "Use one-time password (OTP) instead"
-                        : "Use password instead"}
-                    </button>
-                  </div>
+
 
                   <div>
                     <LoadingButton
