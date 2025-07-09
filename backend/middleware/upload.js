@@ -1,40 +1,10 @@
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
 
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, "../uploads");
-if (!fs.existsSync(uploadDir)) {
-  console.log("Creating uploads directory:", uploadDir);
-  fs.mkdirSync(uploadDir, { recursive: true });
-} else {
-  console.log("Uploads directory exists:", uploadDir);
-  // Check if directory is writable
-  try {
-    fs.accessSync(uploadDir, fs.constants.W_OK);
-    console.log("Uploads directory is writable");
-  } catch (err) {
-    console.error("Uploads directory is not writable:", err);
-  }
-}
+// Use memory storage instead of disk storage
+const storage = multer.memoryStorage();
 
-// Configure storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    console.log(`Setting destination for file: ${file.originalname}`);
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Create unique filename with original extension
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    const newFilename = uniqueSuffix + ext;
-    console.log(
-      `Generated filename: ${newFilename} for original: ${file.originalname}`
-    );
-    cb(null, newFilename);
-  },
-});
+console.log("Using memory storage for file uploads");
 
 // File filter function - now accepts all file types
 const fileFilter = (req, file, cb) => {

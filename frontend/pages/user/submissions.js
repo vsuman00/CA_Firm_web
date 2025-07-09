@@ -25,7 +25,7 @@ function UserSubmissions() {
     const fetchSubmissions = async () => {
       try {
         setLoading(true);
-        console.log('Fetching submissions from:', API_PATHS.FORMS.USER_SUBMISSIONS);
+        console.log('Fetching submissions from:', API_PATHS.FORMS.USER_SUBMISSIONS); console.log('Auth token:', localStorage.getItem('token')); console.log('User:', localStorage.getItem('user'));
         const response = await httpClient.get(API_PATHS.FORMS.USER_SUBMISSIONS);
         console.log('Submissions response:', response.data);
         setSubmissions(response.data);

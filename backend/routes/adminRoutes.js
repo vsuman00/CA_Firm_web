@@ -44,6 +44,7 @@ router.get("/forms", async (req, res) => {
 
     // Get forms with pagination
     const forms = await TaxForm.find(filter)
+      .select("-documents.fileData") // Exclude file data to reduce payload size
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -71,7 +72,8 @@ router.get("/forms", async (req, res) => {
 // @access  Private/Admin
 router.get("/forms/:id", async (req, res) => {
   try {
-    const form = await TaxForm.findById(req.params.id);
+    const form = await TaxForm.findById(req.params.id)
+      .select("-documents.fileData"); // Exclude file data to reduce payload size
 
     if (!form) {
       return res.status(404).json({ message: "Form not found" });

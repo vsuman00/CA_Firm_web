@@ -20,10 +20,20 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/user/tax-filing": [
+    "/admin/tax-forms/[id]": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/user/tax-filing.js"
+      "static/chunks/pages/admin/tax-forms/[id].js"
+    ],
+    "/user/submission/[id]": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/user/submission/[id].js"
+    ],
+    "/user/submissions": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/user/submissions.js"
     ]
   },
   "ampFirstPages": []

@@ -18,9 +18,13 @@ interface TaxFilingFormValues {
   phone: string;
   pan: string;
   hasIncomeTaxLogin: boolean;
-  incomeTaxLoginCredentials: string;
+  incomeTaxLoginId: string;
+  incomeTaxLoginPassword: string;
   hasHomeLoan: boolean;
-  homeLoanDetails: string;
+  homeLoanSanctionDate: string;
+  homeLoanAmount: string;
+  homeLoanCurrentDue: string;
+  homeLoanTotalInterest: string;
   tradingSummary: string;
   hasPranNumber: boolean;
   pranNumber: string;
@@ -44,14 +48,30 @@ const TaxFilingSchema = Yup.object().shape({
       return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value);
     }),
   hasIncomeTaxLogin: Yup.boolean(),
-  incomeTaxLoginCredentials: Yup.string().when("hasIncomeTaxLogin", {
+  incomeTaxLoginId: Yup.string().when("hasIncomeTaxLogin", {
     is: true,
-    then: () => Yup.string(),
+    then: () => Yup.string().required("Income Tax Login ID is required"),
+  }),
+  incomeTaxLoginPassword: Yup.string().when("hasIncomeTaxLogin", {
+    is: true,
+    then: () => Yup.string().required("Income Tax Login Password is required"),
   }),
   hasHomeLoan: Yup.boolean(),
-  homeLoanDetails: Yup.string().when("hasHomeLoan", {
+  homeLoanSanctionDate: Yup.string().when("hasHomeLoan", {
     is: true,
-    then: () => Yup.string(),
+    then: () => Yup.string().required("Date of Loan Sanction is required"),
+  }),
+  homeLoanAmount: Yup.string().when("hasHomeLoan", {
+    is: true,
+    then: () => Yup.string().required("Total Loan Amount is required"),
+  }),
+  homeLoanCurrentDue: Yup.string().when("hasHomeLoan", {
+    is: true,
+    then: () => Yup.string().required("Current Due Amount is required"),
+  }),
+  homeLoanTotalInterest: Yup.string().when("hasHomeLoan", {
+    is: true,
+    then: () => Yup.string().required("Total Interest is required"),
   }),
   tradingSummary: Yup.string(),
   hasPranNumber: Yup.boolean(),
@@ -69,19 +89,28 @@ const ALLOWED_FILE_TYPES = ["pdf", "png", "jpg", "jpeg", "zip"];
 // Maximum file size (50MB)
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
-// Document list for display
-const REQUIRED_DOCUMENTS = [
-  "Form 16",
-  "Bank Statements",
-  "Investment Proof (FY 2023-24)",
-  "Salary Slip (March 2024)",
-  "AADHAR Card (Both Sides)",
-  "Any other documents (if required)",
+// Document types mapping
+const DOCUMENT_TYPES = [
+  { value: "form16", label: "Form 16" },
+  { value: "bankStatement", label: "Bank Statements" },
+  { value: "investmentProof", label: "Investment Proof (FY 2023-24)" },
+  { value: "salarySlip", label: "Salary Slip (March 2024)" },
+  { value: "aadharCard", label: "AADHAR Card (Both Sides)" },
+  { value: "homeLoanCertificate", label: "Home Loan Certificate" },
+  { value: "tradingSummary", label: "Trading Summary" },
+  { value: "other", label: "Other Documents" },
 ];
+
+// Document list for display
+const REQUIRED_DOCUMENTS = DOCUMENT_TYPES.map(doc => doc.label);
 
 function TaxFilingForm(): React.ReactElement {
   const router = useRouter();
-  const [files, setFiles] = useState<File[]>([]);
+  interface FileWithType extends File {
+    documentType?: string;
+  }
+
+  const [files, setFiles] = useState<FileWithType[]>([]);
   const [totalSize, setTotalSize] = useState<number>(0);
   const [fileError, setFileError] = useState<string>("");
 
@@ -121,8 +150,32 @@ function TaxFilingForm(): React.ReactElement {
       // Clear any previous errors
       setFileError("");
 
-      // Add files to state
-      setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
+      // Add files to state with default document type
+      const filesWithType = acceptedFiles.map(file => {
+        // Try to guess document type based on filename
+        let documentType = "other";
+        const fileName = file.name.toLowerCase();
+        
+        if (fileName.includes("form16") || fileName.includes("form 16")) {
+          documentType = "form16";
+        } else if (fileName.includes("bank") || fileName.includes("statement")) {
+          documentType = "bankStatement";
+        } else if (fileName.includes("investment") || fileName.includes("proof")) {
+          documentType = "investmentProof";
+        } else if (fileName.includes("salary") || fileName.includes("slip")) {
+          documentType = "salarySlip";
+        } else if (fileName.includes("aadhar") || fileName.includes("aadhaar")) {
+          documentType = "aadharCard";
+        } else if (fileName.includes("loan") || fileName.includes("home")) {
+          documentType = "homeLoanCertificate";
+        } else if (fileName.includes("trading") || fileName.includes("trade")) {
+          documentType = "tradingSummary";
+        }
+        
+        return Object.assign(file, { documentType });
+      });
+      
+      setFiles((prevFiles) => [...prevFiles, ...filesWithType]);
       setTotalSize(newTotalSize);
     },
     [totalSize]
@@ -168,10 +221,11 @@ function TaxFilingForm(): React.ReactElement {
         );
       });
 
-      // Add files to formData
+      // Add files to formData with document types
       files.forEach((file, index) => {
         formData.append(`documents`, file);
         formData.append(`fileId_${index}`, `file_${index}`);
+        formData.append(`documentType_file_${index}`, file.documentType || 'other');
       });
 
       // Submit form
@@ -220,13 +274,17 @@ function TaxFilingForm(): React.ReactElement {
             <Formik
               initialValues={{
                 fullName: "",
-                email: "",
+                email: typeof window !== "undefined" ? (JSON.parse(localStorage.getItem("user") || "{}").email || "") : "",
                 phone: "",
                 pan: "",
                 hasIncomeTaxLogin: false,
-                incomeTaxLoginCredentials: "",
+                incomeTaxLoginId: "",
+                incomeTaxLoginPassword: "",
                 hasHomeLoan: false,
-                homeLoanDetails: "",
+                homeLoanSanctionDate: "",
+                homeLoanAmount: "",
+                homeLoanCurrentDue: "",
+                homeLoanTotalInterest: "",
                 tradingSummary: "",
                 hasPranNumber: false,
                 pranNumber: "",
@@ -234,7 +292,25 @@ function TaxFilingForm(): React.ReactElement {
               validationSchema={TaxFilingSchema}
               onSubmit={handleSubmit}
             >
-              {({ isSubmitting, values }) => (
+              {({ isSubmitting, values, setFieldValue }) => {
+                // Effect to set IT Login ID when checkbox is checked or PAN changes
+                React.useEffect(() => {
+                  if (values.hasIncomeTaxLogin && values.pan) {
+                    setFieldValue('incomeTaxLoginId', values.pan);
+                  }
+                }, [values.hasIncomeTaxLogin, values.pan, setFieldValue]);
+                
+                // Effect to set email from user data in localStorage
+                React.useEffect(() => {
+                  if (typeof window !== "undefined") {
+                    const userData = JSON.parse(localStorage.getItem("user") || "{}");
+                    if (userData && userData.email && !values.email) {
+                      setFieldValue('email', userData.email);
+                    }
+                  }
+                }, [setFieldValue, values.email]);
+                
+                return (
                 <Form className="space-y-6">
                   {/* Personal Information Section */}
                   <div>
@@ -384,21 +460,56 @@ function TaxFilingForm(): React.ReactElement {
                         </div>
 
                         {values.hasIncomeTaxLogin && (
-                          <div className="mt-3 ml-6">
-                            <label
-                              htmlFor="incomeTaxLoginCredentials"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Income Tax Login Details
-                            </label>
-                            <Field
-                              as="textarea"
-                              name="incomeTaxLoginCredentials"
-                              id="incomeTaxLoginCredentials"
-                              rows={3}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                              placeholder="Please provide your income tax portal username (Note: Do NOT share your password)"
-                            />
+                          <div className="mt-3 ml-6 space-y-4">
+                            <div>
+                              <label
+                                htmlFor="incomeTaxLoginId"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                IT Login ID
+                              </label>
+                              <Field
+                                type="text"
+                                name="incomeTaxLoginId"
+                                id="incomeTaxLoginId"
+                                className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                placeholder="Enter your Income Tax portal login ID"
+                                readOnly
+                                // This field is auto-populated with PAN number via useEffect
+                              />
+                              <ErrorMessage
+                                name="incomeTaxLoginId"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">Your PAN number is automatically used as your IT Login ID</p>
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="incomeTaxLoginPassword"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                IT Login Password
+                              </label>
+                              <Field
+                                type="password"
+                                name="incomeTaxLoginPassword"
+                                id="incomeTaxLoginPassword"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                placeholder="Enter your Income Tax portal password"
+                              />
+                              <ErrorMessage
+                                name="incomeTaxLoginPassword"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                              <ErrorMessage
+                                name="incomeTaxLoginPassword"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">Your password will be securely stored and only used for tax filing purposes</p>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -420,21 +531,91 @@ function TaxFilingForm(): React.ReactElement {
                         </div>
 
                         {values.hasHomeLoan && (
-                          <div className="mt-3 ml-6">
-                            <label
-                              htmlFor="homeLoanDetails"
-                              className="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                              Home Loan Details
-                            </label>
-                            <Field
-                              as="textarea"
-                              name="homeLoanDetails"
-                              id="homeLoanDetails"
-                              rows={3}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                              placeholder="Please provide details about your home loan (lender, loan amount, EMI, etc.)"
-                            />
+                          <div className="mt-3 ml-6 space-y-4">
+                            <div>
+                              <label
+                                htmlFor="homeLoanSanctionDate"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                Date of Loan Sanction
+                              </label>
+                              <Field
+                                type="date"
+                                name="homeLoanSanctionDate"
+                                id="homeLoanSanctionDate"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                placeholder="DD/MM/YYYY"
+                              />
+                              <ErrorMessage
+                                name="homeLoanSanctionDate"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">Format: DD/MM/YYYY</p>
+                            </div>
+                            
+                            <div>
+                              <label
+                                htmlFor="homeLoanAmount"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                Total Loan Amount (INR)
+                              </label>
+                              <Field
+                                type="text"
+                                name="homeLoanAmount"
+                                id="homeLoanAmount"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                placeholder="Enter total loan amount in INR"
+                              />
+                              <ErrorMessage
+                                name="homeLoanAmount"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label
+                                htmlFor="homeLoanCurrentDue"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                Current Due Amount (INR)
+                              </label>
+                              <Field
+                                type="text"
+                                name="homeLoanCurrentDue"
+                                id="homeLoanCurrentDue"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                placeholder="Enter current due amount in INR"
+                              />
+                              <ErrorMessage
+                                name="homeLoanCurrentDue"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label
+                                htmlFor="homeLoanTotalInterest"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                              >
+                                Total Interest
+                              </label>
+                              <Field
+                                type="text"
+                                name="homeLoanTotalInterest"
+                                id="homeLoanTotalInterest"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                placeholder="Enter total interest amount"
+                              />
+                              <ErrorMessage
+                                name="homeLoanTotalInterest"
+                                component="div"
+                                className="mt-1 text-sm text-red-600"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
@@ -567,6 +748,21 @@ function TaxFilingForm(): React.ReactElement {
                                 <span className="ml-2 flex-1 w-0 truncate">{file.name}</span>
                               </div>
                               <div className="ml-4 flex-shrink-0 flex items-center space-x-4">
+                                <select 
+                                  className="text-xs border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                                  value={file.documentType || 'other'}
+                                  onChange={(e) => {
+                                    const newFiles = [...files];
+                                    newFiles[index] = Object.assign({}, file, { documentType: e.target.value });
+                                    setFiles(newFiles);
+                                  }}
+                                >
+                                  {DOCUMENT_TYPES.map((docType) => (
+                                    <option key={docType.value} value={docType.value}>
+                                      {docType.label}
+                                    </option>
+                                  ))}
+                                </select>
                                 <span className="text-xs text-gray-500">{formatFileSize(file.size)}</span>
                                 <button
                                   type="button"
@@ -639,7 +835,8 @@ function TaxFilingForm(): React.ReactElement {
                     </LoadingButton>
                   </div>
                 </Form>
-              )}
+              );
+              }}
             </Formik>
           </div>
         </div>

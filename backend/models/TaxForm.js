@@ -24,10 +24,6 @@ const FileSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  path: {
-    type: String,
-    required: true,
-  },
   fileType: {
     type: String,
     required: true,
@@ -36,6 +32,14 @@ const FileSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  fileData: {
+    type: Buffer,
+    required: true
+  },
+  contentType: {
+    type: String,
+    required: true
+  }
 });
 
 const TaxFormSchema = new mongoose.Schema({
@@ -66,7 +70,11 @@ const TaxFormSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  incomeTaxLoginCredentials: {
+  incomeTaxLoginId: {
+    type: String,
+    trim: true,
+  },
+  incomeTaxLoginPassword: {
     type: String,
     trim: true,
   },
@@ -74,7 +82,23 @@ const TaxFormSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  hasPRAN: {
+  homeLoanSanctionDate: {
+    type: String,
+    trim: true,
+  },
+  homeLoanAmount: {
+    type: String,
+    trim: true,
+  },
+  homeLoanCurrentDue: {
+    type: String,
+    trim: true,
+  },
+  homeLoanTotalInterest: {
+    type: String,
+    trim: true,
+  },
+  hasPranNumber: {
     type: Boolean,
     default: false,
   },

@@ -4,7 +4,7 @@ import { withAuth } from "../../../utils/auth";
 import AdminLayout from "../../../components/AdminLayout";
 import toast from "react-hot-toast";
 import { SectionLoading } from "../../../components/LoadingState";
-import { getFileUrl, formatFileSize } from "../../../utils/fileUtils";
+import { getFileUrl, formatFileSize, downloadDocumentWithAuth } from "../../../utils/fileUtils";
 import { handleApiErrorWithToast } from "../../../utils/errorHandler";
 import { transformTaxFormResponse } from "../../../utils/transformers";
 import httpClient, { API_PATHS } from "../../../utils/httpClient";
@@ -90,7 +90,8 @@ function TaxFormDetail() {
 
   // Handle document download
   const downloadDocument = (document) => {
-    window.open(getFileUrl(document.path), "_blank");
+    // Use the authenticated download function instead of window.open
+    downloadDocumentWithAuth(document._id, document.originalName);
   };
 
   // Status badge component
@@ -288,13 +289,18 @@ function TaxFormDetail() {
                       </dd>
                     </div>
 
-                    {form.hasSalary && (
+                    {form.hasIncomeTaxLogin && (
                       <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
                         <dt className="text-sm font-medium text-gray-500">
-                          Income Tax login credentials
+                          Income Tax Login Credentials
                         </dt>
                         <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                          {form.incomeLoginDetails || "Not provided"}
+                          <div>
+                            <span className="font-medium">Login ID:</span> {form.incomeTaxLoginId || "Not provided"}
+                          </div>
+                          <div className="mt-1">
+                            <span className="font-medium">Password:</span> {form.incomeTaxLoginPassword ? "••••••••" : "Not provided"}
+                          </div>
                         </dd>
                       </div>
                     )}
@@ -302,15 +308,23 @@ function TaxFormDetail() {
                     {form.hasHomeLoan && (
                       <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 bg-gray-50">
                         <dt className="text-sm font-medium text-gray-500">
-                          Home Loan Interest Certificate
+                          Home Loan Details
                         </dt>
                         <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                            <svg className="-ml-0.5 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
-                              <circle cx="4" cy="4" r="3" />
-                            </svg>
-                            Provided
-                          </span>
+                          <div className="grid grid-cols-1 gap-2">
+                            <div>
+                              <span className="font-medium">Sanction Date:</span> {form.homeLoanSanctionDate || "Not provided"}
+                            </div>
+                            <div>
+                              <span className="font-medium">Loan Amount:</span> {form.homeLoanAmount || "Not provided"}
+                            </div>
+                            <div>
+                              <span className="font-medium">Current Due Amount:</span> {form.homeLoanCurrentDue || "Not provided"}
+                            </div>
+                            <div>
+                              <span className="font-medium">Total Interest:</span> {form.homeLoanTotalInterest || "Not provided"}
+                            </div>
+                          </div>
                         </dd>
                       </div>
                     )}
@@ -365,7 +379,7 @@ function TaxFormDetail() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {form.documents.map((doc, index) => {
                       // Determine document type for icon color
-                      const isOtherDocument = doc.path.includes('otherDocument');
+                      const isOtherDocument = doc.documentType === 'other';
                       const docTypeColor = isOtherDocument ? 'text-purple-500' : 'text-primary-500';
                       
                       // Format file size

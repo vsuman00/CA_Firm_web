@@ -6,7 +6,7 @@ import { withAuth } from "../../../utils/auth";
 import httpClient, { API_PATHS } from "../../../utils/httpClient";
 import { handleApiErrorWithToast } from "../../../utils/errorHandler";
 import { SectionLoading } from "../../../components/LoadingState";
-import { getFileUrl, formatFileSize } from "../../../utils/fileUtils";
+import { getFileUrl, formatFileSize, downloadDocumentWithAuth } from "../../../utils/fileUtils";
 import {
   DocumentTextIcon,
   ClockIcon,
@@ -149,10 +149,8 @@ function SubmissionDetail() {
       <div className="py-3 flex justify-between text-sm font-medium">
         <div className="w-1/4 text-gray-500">{label}</div>
         <div className="w-3/4 text-gray-900">
-          <a
-            href={getFileUrl(file.path)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => downloadDocumentWithAuth(file._id, file.originalName)}
             className="inline-flex items-center text-primary-600 hover:text-primary-900"
           >
             <span className="truncate">{file.originalName}</span>
@@ -160,7 +158,7 @@ function SubmissionDetail() {
               ({formatFileSize(file.fileSize)})
             </span>
             <ArrowDownTrayIcon className="ml-1 h-4 w-4" />
-          </a>
+          </button>
         </div>
       </div>
     );

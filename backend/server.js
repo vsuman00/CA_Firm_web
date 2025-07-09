@@ -18,8 +18,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Make uploads folder accessible
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// No longer using uploads folder for file storage
 
 // Routes
 app.use("/api/forms", formRoutes);

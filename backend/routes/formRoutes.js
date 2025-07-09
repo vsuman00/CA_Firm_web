@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const path = require("path");
 const TaxForm = require("../models/TaxForm");
 const Contact = require("../models/Contact");
 const upload = require("../middleware/upload");
@@ -32,9 +33,14 @@ router.post(
         phone,
         pan,
         hasIncomeTaxLogin,
-        incomeTaxLoginCredentials,
+        incomeTaxLoginId,
+        incomeTaxLoginPassword,
         hasHomeLoan,
-        hasPRAN,
+        homeLoanSanctionDate,
+        homeLoanAmount,
+        homeLoanCurrentDue,
+        homeLoanTotalInterest,
+        hasPranNumber,
         pranNumber,
       } = req.body;
 
@@ -54,14 +60,21 @@ router.post(
       }
 
       // Validate conditional fields
-      if (hasIncomeTaxLogin === "true" && !incomeTaxLoginCredentials) {
+      if (hasIncomeTaxLogin === "true" && (!incomeTaxLoginId || !incomeTaxLoginPassword)) {
         console.log("Missing income tax login credentials");
         return res
           .status(400)
           .json({ message: "Income tax login credentials are required" });
       }
 
-      if (hasPRAN === "true" && !pranNumber) {
+      if (hasHomeLoan === "true" && (!homeLoanSanctionDate || !homeLoanAmount || !homeLoanCurrentDue || !homeLoanTotalInterest)) {
+        console.log("Missing home loan details");
+        return res
+          .status(400)
+          .json({ message: "Home loan details are required" });
+      }
+
+      if (hasPranNumber === "true" && !pranNumber) {
         console.log("Missing PRAN number");
         return res.status(400).json({ message: "PRAN number is required" });
       }
@@ -73,9 +86,14 @@ router.post(
         phone,
         pan,
         hasIncomeTaxLogin: hasIncomeTaxLogin === "true",
-        incomeTaxLoginCredentials: incomeTaxLoginCredentials || "",
+        incomeTaxLoginId: incomeTaxLoginId || "",
+        incomeTaxLoginPassword: incomeTaxLoginPassword || "",
         hasHomeLoan: hasHomeLoan === "true",
-        hasPRAN: hasPRAN === "true",
+        homeLoanSanctionDate: homeLoanSanctionDate || "",
+        homeLoanAmount: homeLoanAmount || "",
+        homeLoanCurrentDue: homeLoanCurrentDue || "",
+        homeLoanTotalInterest: homeLoanTotalInterest || "",
+        hasPranNumber: hasPranNumber === "true",
         pranNumber: pranNumber || "",
         status: "Pending",
         documents: []
@@ -98,24 +116,29 @@ router.post(
         
         req.files.forEach((file, index) => {
           const fileId = req.body[`fileId_${index}`] || `file_${index}`;
-          const docType = documentTypes[fileId] || 'otherDocument';
+          const docType = documentTypes[fileId] || 'other';
           
           console.log(`Processing file: ${docType}`, {
-            filename: file.filename,
             originalname: file.originalname,
             mimetype: file.mimetype,
             size: file.size,
             extension: file.originalname.split('.').pop().toLowerCase()
           });
           
-          // Add to documents array
+          // Generate a unique filename
+          const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+          const ext = path.extname(file.originalname);
+          const fileName = uniqueSuffix + ext;
+          
+          // Add to documents array with file data stored in Buffer
           formData.documents.push({
             documentType: docType,
-            fileName: file.filename,
+            fileName: fileName,
             originalName: file.originalname,
-            path: `/uploads/${file.filename}`,
             fileType: file.mimetype,
             fileSize: file.size,
+            fileData: file.buffer,
+            contentType: file.mimetype
           });
           
           // Remove the fileId field
@@ -188,7 +211,7 @@ router.get("/user-submissions", protect, async (req, res) => {
     // Find all tax forms submitted by this user
     const submissions = await TaxForm.find({ email: userEmail })
       .sort({ createdAt: -1 }) // Sort by newest first
-      .select("-incomeTaxLoginCredentials"); // Exclude sensitive data
+      .select("-incomeTaxLoginCredentials -documents.fileData"); // Exclude sensitive data and file data
 
     res.json(submissions);
   } catch (error) {
@@ -203,7 +226,7 @@ router.get("/user-submissions", protect, async (req, res) => {
 router.get("/user-submissions/:id", protect, async (req, res) => {
   try {
     const submission = await TaxForm.findById(req.params.id)
-      .select("-incomeTaxLoginCredentials"); // Exclude sensitive data
+      .select("-incomeTaxLoginCredentials -documents.fileData"); // Exclude sensitive data and file data
 
     if (!submission) {
       return res.status(404).json({ message: "Submission not found" });
@@ -217,6 +240,47 @@ router.get("/user-submissions/:id", protect, async (req, res) => {
     res.json(submission);
   } catch (error) {
     console.error("Error fetching submission details:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// @route   GET /api/forms/download/:documentId
+// @desc    Download a document from a tax form submission
+// @access  Private
+router.get("/download/:documentId", protect, async (req, res) => {
+  try {
+    const documentId = req.params.documentId;
+    
+    // Find the tax form containing the document
+    const taxForm = await TaxForm.findOne({ "documents._id": documentId });
+    
+    if (!taxForm) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+    
+    // Check if the tax form belongs to the logged-in user or if user is admin
+    if (taxForm.email !== req.user.email && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to access this document" });
+    }
+    
+    // Find the specific document in the documents array
+    const document = taxForm.documents.find(doc => doc._id.toString() === documentId);
+    
+    if (!document) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+    
+    // Set response headers
+    res.set({
+      'Content-Type': document.contentType,
+      'Content-Disposition': `attachment; filename="${document.originalName}"`
+    });
+    
+    // Send the file data
+    res.send(document.fileData);
+    
+  } catch (error) {
+    console.error("Error downloading document:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

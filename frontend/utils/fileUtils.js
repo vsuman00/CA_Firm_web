@@ -5,17 +5,62 @@
 
 /**
  * Generates a proper URL for file downloads
- * Prevents double slash issues by cleaning the path
- * @param {string} path - The file path from the API
+ * Now uses document ID for retrieving files from database
+ * @param {string} documentId - The document ID from the database
  * @returns {string} Properly formatted URL for the file
  */
-export const getFileUrl = (path) => {
-  if (!path) return "";
+export const getFileUrl = (documentId) => {
+  if (!documentId) return "";
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  // Remove leading slash to prevent double slash issues
-  const cleanPath = path.startsWith("/") ? path.substring(1) : path;
-  return `${apiUrl}/${cleanPath}`;
+  return `${apiUrl}/api/forms/download/${documentId}`;
+};
+
+/**
+ * Downloads a document with proper authentication
+ * @param {string} documentId - The document ID to download
+ * @param {string} fileName - Optional filename for the download
+ */
+export const downloadDocumentWithAuth = async (documentId, fileName) => {
+  if (!documentId) return;
+  
+  try {
+    // Get the token from localStorage
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      console.error("Authentication token not found");
+      return;
+    }
+    
+    // Create a fetch request with the authorization header
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/download/${documentId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+    }
+    
+    // Get the blob from the response
+    const blob = await response.blob();
+    
+    // Create a download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName || `document-${documentId}`;
+    
+    // Append to the document, click it, and clean up
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error("Error downloading document:", error);
+  }
 };
 
 /**
