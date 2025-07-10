@@ -386,7 +386,31 @@ router.post("/verify-otp", async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    res.status(200).json({ message: "OTP verified successfully" });
+    // Find the user to include in the response
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Create a temporary token for password reset
+    const tempPayload = {
+      user: {
+        id: user.id,
+        role: user.role,
+        temp: true, // Mark as temporary token
+      },
+    };
+
+    const tempToken = jwt.sign(
+      tempPayload,
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" } // Short expiration for security
+    );
+
+    res.status(200).json({ 
+      message: "OTP verified successfully",
+      tempToken
+    });
   } catch (error) {
     console.error("Verify OTP error:", error);
     res.status(500).json({ message: "Server error" });
@@ -405,34 +429,60 @@ router.post("/toggle-otp", protect, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Toggle useOTP flag
-    user.useOTP = !user.useOTP;
+    // Check if this is a password reset request (from a temporary token)
+    const isPasswordReset = req.user.temp === true;
 
-    // If enabling OTP, clear password
-    if (user.useOTP) {
-      user.password = undefined;
-      // Generate and send OTP
-      await otpUtils.generateAndSaveOTP(user.email);
-    } else {
-      // If disabling OTP, require password
+    if (isPasswordReset) {
+      // This is a password reset request
       if (!req.body.password) {
-        return res
-          .status(400)
-          .json({ message: "Password is required when disabling OTP" });
+        return res.status(400).json({ message: "New password is required" });
       }
 
-      // Set password
+      // Set the new password
       user.password = req.body.password;
+      
+      // Make sure OTP is disabled for password auth
+      if (user.useOTP) {
+        user.useOTP = false;
+      }
+
+      await user.save();
+
+      return res.json({
+        message: "Password reset successfully",
+        useOTP: user.useOTP,
+      });
+    } else {
+      // Regular toggle OTP functionality
+      // Toggle useOTP flag
+      user.useOTP = !user.useOTP;
+
+      // If enabling OTP, clear password
+      if (user.useOTP) {
+        user.password = undefined;
+        // Generate and send OTP
+        await otpUtils.generateAndSaveOTP(user.email);
+      } else {
+        // If disabling OTP, require password
+        if (!req.body.password) {
+          return res
+            .status(400)
+            .json({ message: "Password is required when disabling OTP" });
+        }
+
+        // Set password
+        user.password = req.body.password;
+      }
+
+      await user.save();
+
+      return res.json({
+        message: user.useOTP
+          ? "OTP authentication enabled"
+          : "OTP authentication disabled",
+        useOTP: user.useOTP,
+      });
     }
-
-    await user.save();
-
-    res.json({
-      message: user.useOTP
-        ? "OTP authentication enabled"
-        : "OTP authentication disabled",
-      useOTP: user.useOTP,
-    });
   } catch (error) {
     console.error("Toggle OTP error:", error);
     res.status(500).json({ message: "Server error" });
