@@ -1,7 +1,7 @@
 {
-  "name": "ca-firm-website",
+  "name": "com-financial-website",
   "version": "1.0.0",
-  "description": "CA Firm Website & Admin Dashboard",
+  "description": "Com Financial Services Website & Admin Dashboard",
   "main": "index.js",
   "scripts": {
     "frontend": "cd frontend && npm run dev",
@@ -13,7 +13,7 @@
     "nextjs",
     "express",
     "mongodb",
-    "ca-firm",
+    "financial-services",
     "admin-dashboard"
   ],
   "author": "",

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import toast from "react-hot-toast";
 import Layout from "../../components/Layout";
@@ -12,6 +13,7 @@ import { SectionLoading, LoadingButton } from "../../components/LoadingState";
 import httpClient, { API_PATHS } from "../../utils/httpClient";
 
 function UserProfile() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,6 +47,9 @@ function UserProfile() {
 
       setUser(response.data);
       toast.success("Profile updated successfully");
+      
+      // Redirect to dashboard to show updated information
+      router.push("/user/dashboard");
     } catch (error) {
       handleApiErrorWithToast(error, "Failed to update profile");
     } finally {

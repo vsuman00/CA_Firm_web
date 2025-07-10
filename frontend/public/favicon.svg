@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect x="0" y="0" width="32" height="32" rx="5" fill="#0080ff" />
+  
+  <!-- Letter C -->
+  <path d="M10,13 C10,11 12,9 16,9 C20,9 22,11 22,13" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M10,19 C10,21 12,23 16,23 C20,23 22,21 22,19" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- Letter o -->
+  <circle cx="16" cy="16" r="2" stroke="white" stroke-width="1.5" fill="white"/>
+  
+  <!-- Letter m -->
+  <path d="M18,20 L18,16 M18,18 C18,17 19,16 20,16 C21,16 22,17 22,18 L22,20 M22,18 C22,17 23,16 24,16 C25,16 26,17 26,18 L26,20" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>

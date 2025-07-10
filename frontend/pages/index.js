@@ -8,14 +8,14 @@ const testimonials = [
   {
     id: 1,
     content:
-      "CA Firm helped me navigate complex tax regulations and saved me a significant amount on my returns. Highly recommended!",
+      "Com Financial Services helped me navigate complex tax regulations and saved me a significant amount on my returns. Highly recommended!",
     author: "Rahul Sharma",
     role: "Small Business Owner",
   },
   {
     id: 2,
     content:
-      "The team at CA Firm made my company incorporation process smooth and hassle-free. Their expertise is unmatched.",
+      "The team at Com Financial Services made my company incorporation process smooth and hassle-free. Their expertise is unmatched.",
     author: "Priya Patel",
     role: "Startup Founder",
   },
@@ -34,7 +34,7 @@ const services = [
   "GST registration and compliance",
   "Company incorporation and registration",
   "Financial auditing and reporting",
-  "Bookkeeping and accounting services",
+  "Bookkeeping and financial management",
   "Business advisory and consulting",
 ];
 
@@ -71,7 +71,7 @@ export default function Home() {
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.4, duration: 0.6 }}
                     >
-                      Accounting Services
+                      Financial Services
                     </motion.span>
                   </h1>
                 </motion.div>
@@ -81,8 +81,8 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6, duration: 0.6 }}
                 >
-                  We provide comprehensive accounting, tax, and financial
-                  advisory services to individuals and businesses of all sizes.
+                  We provide comprehensive financial, tax, and advisory
+                  services to individuals and businesses of all sizes.
                 </motion.p>
                 <motion.div
                   className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start"
@@ -128,24 +128,16 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
           >
-            {/* Placeholder for hero image */}
-            <div className="w-full h-full flex items-center justify-center text-primary-500">
-              <motion.svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-24 w-24 opacity-50"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                />
-              </motion.svg>
+            {/* Modern financial hero image */}
+            <div className="w-full h-full flex items-center justify-center">
+              <motion.img
+                src="/hero-image.svg"
+                alt="Financial services illustration"
+                className="w-full h-full object-cover"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.8 }}
+              />
             </div>
           </motion.div>
         </div>
@@ -165,10 +157,10 @@ export default function Home() {
               Services
             </h2>
             <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              Comprehensive Accounting Solutions
+              Comprehensive Financial Solutions
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-              We offer a wide range of accounting and financial services
+              We offer a wide range of financial services
               tailored to meet your specific needs.
             </p>
           </motion.div>
@@ -329,7 +321,7 @@ export default function Home() {
               </h2>
               <p className="text-lg text-gray-500 mb-6 leading-relaxed">
                 With over 15 years of experience, our team of certified
-                accountants provides personalized financial solutions that help
+                financial advisors provides personalized financial solutions that help
                 you achieve your goals.
               </p>
 

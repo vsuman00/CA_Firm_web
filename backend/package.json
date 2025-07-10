@@ -1,7 +1,7 @@
 {
-  "name": "ca-firm-backend",
+  "name": "com-financial-backend",
   "version": "1.0.0",
-  "description": "Backend for CA Firm Website",
+  "description": "Backend for Com Financial Services Website",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

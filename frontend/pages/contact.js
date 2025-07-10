@@ -65,7 +65,7 @@ export default function Contact() {
             <div className="lg:col-span-5">
               <h2 className="text-2xl font-bold text-gray-900">Get in Touch</h2>
               <p className="mt-4 text-lg text-gray-600">
-                Have questions about our services? Need professional accounting
+                Have questions about our services? Need professional financial
                 advice? Our team is here to help you.
               </p>
 

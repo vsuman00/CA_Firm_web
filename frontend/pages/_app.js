@@ -22,13 +22,13 @@ function MyApp({ Component, pageProps }) {
   return (
     <>
       <Head>
-        <title>CA Firm - Professional Accounting Services</title>
+        <title>Com Financial Services - Professional Financial Solutions</title>
         <meta
           name="description"
-          content="Professional chartered accountant services including tax filing, GST registration, company incorporation, and financial auditing."
+          content="Professional financial services including tax filing, GST registration, company incorporation, and financial auditing."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/logo.png" type="image/png" />
       </Head>
 
       <Toaster position="top-right" />

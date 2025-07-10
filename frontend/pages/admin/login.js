@@ -150,7 +150,7 @@ export default function Login() {
                     <p className="text-sm text-gray-700">
                       Email:{" "}
                       <span className="font-mono font-medium">
-                        admin@cafirm.com
+                        admin@comfinancial.com
                       </span>
                     </p>
                     <p className="text-sm text-gray-700 mt-1">

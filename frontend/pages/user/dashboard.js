@@ -28,7 +28,9 @@ function UserDashboard() {
     };
 
     fetchUserData();
-  }, []);
+    
+    // This ensures user data is refreshed when returning from profile page
+  }, [router.asPath]);
 
   if (loading) {
     return (

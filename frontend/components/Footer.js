@@ -21,9 +21,13 @@ export default function Footer() {
             >
               <Link
                 href="/"
-                className="text-xl font-bold text-primary-600 inline-block"
+                className="hover:opacity-90 transition-opacity duration-200"
               >
-                CA Firm
+                <img
+                  src="/logo1.png"
+                  alt="Com Financial Services"
+                  className="h-30 w-auto"
+                />
               </Link>
             </motion.div>
             <motion.p
@@ -33,7 +37,7 @@ export default function Footer() {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="text-gray-500 text-sm mt-2"
             >
-              Professional accounting services for individuals and businesses.
+              Professional financial services for individuals and businesses.
             </motion.p>
             <motion.div
               initial={{ opacity: 0 }}
@@ -365,7 +369,7 @@ export default function Footer() {
           className="mt-12 border-t border-gray-200 pt-8"
         >
           <p className="text-sm text-gray-400 text-center">
-            &copy; {currentYear} CA Firm. All rights reserved.
+            &copy; {currentYear} Com Financial Services. All rights reserved.
           </p>
           <p className="text-sm text-gray-400 text-center">
             Create by

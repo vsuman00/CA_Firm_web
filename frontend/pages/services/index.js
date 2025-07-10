@@ -81,7 +81,7 @@ export default function Services() {
             Our Services
           </h1>
           <p className="mt-4 max-w-2xl mx-auto text-xl text-primary-100">
-            Professional accounting and financial services tailored to your
+            Professional financial services tailored to your
             needs
           </p>
         </div>
@@ -153,7 +153,7 @@ export default function Services() {
           </h2>
           <p className="mt-4 text-lg text-gray-600">
             Contact us today for a free consultation and let us help you with
-            your accounting needs.
+            your financial needs.
           </p>
           <div className="mt-8">
             <Link

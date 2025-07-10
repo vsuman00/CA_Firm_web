@@ -38,9 +38,9 @@ const sendOTPByEmail = async (email, otp) => {
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: process.env.EMAIL_FROM || "noreply@cafirm.com",
+      from: process.env.EMAIL_FROM || "noreply@comfinancial.com",
       to: email,
-      subject: "Your OTP for CA Firm Authentication",
+      subject: "Your OTP for Com Financial Services Authentication",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Your One-Time Password</h2>

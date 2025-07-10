@@ -2,8 +2,5 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/admin/tax-forms/[id]": "pages/admin/tax-forms/[id].js",
-  "/user/submission/[id]": "pages/user/submission/[id].js",
-  "/user/submissions": "pages/user/submissions.js",
-  "/admin/tax-forms": "pages/admin/tax-forms.js"
+  "/user/tax-filing": "pages/user/tax-filing.js"
 }

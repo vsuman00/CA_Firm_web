@@ -1,6 +1,6 @@
-# CA Firm Website & Admin Dashboard
+# Com Financial Services Website & Admin Dashboard
 
-A full-featured, modern, responsive website for a Chartered Accountant firm with a matching admin dashboard.
+A full-featured, modern, responsive website for a Financial Services firm with a matching admin dashboard.
 
 ## 🔧 Tech Stack
 
@@ -62,7 +62,7 @@ project/
 
    ```
    PORT=5000
-   MONGODB_URI=mongodb://localhost:27017/ca_firm
+   MONGODB_URI=mongodb://localhost:27017/com_financial
    JWT_SECRET=your_jwt_secret
    ```
 
@@ -103,7 +103,7 @@ project/
 
 Default admin credentials:
 
-- Email: admin@cafirm.com
+- Email: admin@comfinancial.com
 - Password: admin123
 
 _Note: Change these credentials in production._

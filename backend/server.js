@@ -40,7 +40,7 @@ mongoose
 
 // Basic route for testing
 app.get("/", (req, res) => {
-  res.send("CA Firm API is running");
+  res.send("Com Financial Services API is running");
 });
 
 // Health check endpoint

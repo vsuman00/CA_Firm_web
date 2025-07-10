@@ -54,9 +54,16 @@ export default function Header() {
                 >
                   <Link
                     href="/"
-                    className="text-xl font-bold text-primary-600 hover:text-primary-700 transition-colors duration-200"
+                    className="hover:opacity-90 transition-opacity duration-200"
                   >
-                    CA Firm
+                    {/* <h2 className="h-8 w-auto text-primary-500">
+                      Com Financial Services
+                    </h2> */}
+                    <img
+                      src="/logo1.png"
+                      alt="Com Financial Services"
+                      className="h-16 w-auto"
+                    />
                   </Link>
                 </motion.div>
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -75,7 +82,7 @@ export default function Header() {
                       >
                         <Link
                           href={item.href}
-                          className={`nav-link inline-flex items-center px-1 pt-1 text-sm font-medium ${
+                          className={`nav-link inline-flex items-center px-1 pt-5 text-m font-bold ${
                             isActive
                               ? "nav-link-active border-b-2 border-primary-500 text-gray-900"
                               : "border-b-2 border-transparent text-gray-500 hover:border-primary-300 hover:text-primary-700"
